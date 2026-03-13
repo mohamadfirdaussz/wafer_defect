@@ -248,14 +248,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-<<<<<<< HEAD
-=======
-
->>>>>>> 7ddbfddb6b368d04f8e6eb739eca30893b562401
