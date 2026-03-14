@@ -25,8 +25,8 @@ PROJECT_ROOT = BASE_DIR.parent
 # NOTE: Update this path if your dataset is in a different location.
 # Currently pointing to the user's external OneDrive folder as per original code.
 # Ideally, move 'LSWMD.pkl' to PROJECT_ROOT/datasets/ for portability.
-# RAW_DATA_PATH = r"C:\Users\user\OneDrive - ums.edu.my\FYP 1\datasets\LSWMD.pkl"
-RAW_DATA_PATH = BASE_DIR / "datasets" / "LSWMD.pkl"
+RAW_DATA_PATH = r"C:\Users\user\OneDrive - ums.edu.my\FYP 1\datasets\LSWMD.pkl"
+# RAW_DATA_PATH = BASE_DIR / "datasets" / "LSWMD.pkl"
 
 # Output Directories (Relative to Project Root for better organization)
 # Or keep them in OneDrive if strictly required, but here we default to relative

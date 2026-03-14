@@ -58,16 +58,33 @@
 # Minimal Python 3.10 setup for WM-811K project
 # ───────────────────────────────────────────────
 
-set -e  # Exit immediately if a command fails
+set -e
 
 echo "📌 Updating system packages..."
 sudo apt-get update -y
+sudo apt-get install -y wget build-essential libssl-dev zlib1g-dev \
+libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev \
+libffi-dev libbz2-dev liblzma-dev uuid-dev tk-dev xz-utils
 
-echo "📌 Installing Python 3.10 and venv/distutils..."
-sudo apt-get install -y python3.10 python3.10-venv python3.10-distutils python3.10-dev wget curl
+PYTHON_VERSION=3.10.8
+PYTHON_TAR=Python-$PYTHON_VERSION.tgz
 
-echo "📌 Setting python3.10 as default for this shell (temporary)..."
-alias python3=python3.10
+if [ ! -f $PYTHON_TAR ]; then
+    echo "📥 Downloading Python $PYTHON_VERSION..."
+    wget https://www.python.org/ftp/python/$PYTHON_VERSION/$PYTHON_TAR
+fi
 
-echo "✅ Python 3.10 installation completed!"
+echo "⚙️  Extracting Python..."
+tar -xf $PYTHON_TAR
+
+cd Python-$PYTHON_VERSION
+echo "⚙️  Configuring build..."
+./configure --enable-optimizations --with-ensurepip=install
+echo "⚙️  Building Python (this may take a few minutes)..."
+make -j$(nproc)
+echo "⚙️  Installing Python 3.10 locally..."
+sudo make altinstall
+
+cd ..
+echo "✅ Python 3.10 installation complete!"
 python3.10 --version
