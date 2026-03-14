@@ -54,7 +54,7 @@ def check_python310():
     return False
 
 def setup_python310():
-    setup_script = Path("setup_python310.sh")
+    setup_script = Path("scripts/setup_python310.sh")
     if not setup_script.exists():
         print_error("setup_python310.sh not found!")
         return False
