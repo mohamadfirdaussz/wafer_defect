@@ -41,58 +41,53 @@ def print_info(message):
     print_colored(f"ℹ️  {message}", Colors.OKCYAN)
 
 # ───────────────────────────────────────────────
-# 2️⃣ PYTHON 3.10 CHECK
+# 2️⃣ PYTHON 3.10 CHECK & VENV SETUP
 # ───────────────────────────────────────────────
+PYTHON_BIN = "python3.10"
+VENV_DIR = Path(".venv")
+
 def check_python310():
-    version = sys.version_info
-    version_str = f"{version.major}.{version.minor}.{version.micro}"
-    print_info(f"Detected Python {version_str} ({sys.executable})")
-    if version.major == 3 and version.minor == 10:
-        print_success("Python 3.10.x detected")
-        return True
-    print_warning("Python 3.10.x not detected")
-    return False
-
-def setup_python310():
-    setup_script = Path("scripts/setup_python310.sh")
-    if not setup_script.exists():
-        print_error("setup_python310.sh not found!")
-        return False
     try:
-        print_info("🔧 Installing Python 3.10.8...")
-        subprocess.run(["bash", str(setup_script)], check=True)
-        print_success("Python 3.10.8 installation completed")
+        version_output = subprocess.check_output([PYTHON_BIN, "--version"]).decode()
+        print_info(f"Detected {version_output.strip()}")
         return True
-    except subprocess.CalledProcessError:
-        print_error("Python 3.10 installation failed")
+    except Exception:
+        print_warning("Python 3.10.x not detected")
         return False
 
-# ───────────────────────────────────────────────
-# 3️⃣ EXISTING ENVIRONMENT & PIPELINE CHECKS
-# ───────────────────────────────────────────────
-def check_python_version():
-    print_header("1️⃣  Checking Python Version")
-    
-    version = sys.version_info
-    version_str = f"{version.major}.{version.minor}.{version.micro}"
-    print_info(f"Detected Python {version_str}")
-    print_info(f"Interpreter: {sys.executable}")
-
-    if version.major < 3 or (version.major == 3 and version.minor < 9):
-        print_error("Python 3.9 or higher is required!")
-        print_info("Please install Python 3.9, 3.10, or 3.11")
-        return False
-
-    if version.major == 3 and version.minor >= 12:
-        print_warning("Python 3.12+ detected. Some ML libraries may have compatibility issues.")
-        print_warning("Recommended: Python 3.9 - 3.11")
-        print_info("Continuing anyway...")
-
-    print_success("Python version is compatible")
+def create_venv():
+    if not VENV_DIR.exists():
+        print_info("Creating virtual environment with Python 3.10...")
+        try:
+            subprocess.run([PYTHON_BIN, "-m", "venv", str(VENV_DIR)], check=True)
+            print_success("Virtual environment created")
+        except subprocess.CalledProcessError:
+            print_error("Failed to create virtual environment")
+            return False
+    else:
+        print_info("Virtual environment already exists")
     return True
 
+def install_requirements():
+    pip_bin = VENV_DIR / "bin" / "pip"
+    req_file = Path("ml_flow/requirement.txt")
+    if not req_file.exists():
+        print_error("requirement.txt not found")
+        return False
+    print_info("Installing dependencies in virtual environment...")
+    try:
+        subprocess.run([str(pip_bin), "install", "--upgrade", "pip"], check=True)
+        subprocess.run([str(pip_bin), "install", "-r", str(req_file)], check=True)
+        print_success("Dependencies installed successfully")
+        return True
+    except subprocess.CalledProcessError:
+        print_error("Failed to install dependencies")
+        return False
+
+# ───────────────────────────────────────────────
+# 3️⃣ DATASET CHECK & PIPELINE
+# ───────────────────────────────────────────────
 def check_dataset():
-    print_header("2️⃣  Checking Dataset")
     dataset_paths = [
         Path("ml_flow/datasets/LSWMD.pkl"),
         Path("datasets/LSWMD.pkl"),
@@ -108,41 +103,14 @@ def check_dataset():
     print_warning("To download, run Kaggle scripts or set KAGGLE_JSON secret")
     return False
 
-def check_dependencies():
-    print_header("3️⃣  Checking Dependencies")
-    critical_packages = ['numpy','pandas','sklearn','xgboost']
-    missing = []
-    for pkg in critical_packages:
-        try:
-            __import__(pkg)
-        except ImportError:
-            missing.append(pkg)
-
-    if missing:
-        print_warning(f"Missing packages: {', '.join(missing)}")
-        req_file = Path("ml_flow/requirement.txt")
-        if req_file.exists():
-            try:
-                subprocess.run([sys.executable,"-m","pip","install","-r",str(req_file),"--quiet"], check=True)
-                print_success("Dependencies installed successfully")
-            except subprocess.CalledProcessError:
-                print_error("Failed to install dependencies")
-                return False
-        else:
-            print_error("requirement.txt not found")
-            return False
-    else:
-        print_success("All critical dependencies are installed")
-    return True
-
 def run_pipeline():
-    print_header("4️⃣  Running ML Pipeline")
     pipeline_script = Path("ml_flow/main.py")
     if not pipeline_script.exists():
         print_error("Pipeline script not found: ml_flow/main.py")
         return False
+    python_bin = VENV_DIR / "bin" / "python"
     try:
-        subprocess.run([sys.executable,str(pipeline_script)], check=True, cwd=str(Path.cwd()))
+        subprocess.run([str(python_bin), str(pipeline_script)], check=True, cwd=str(Path.cwd()))
         return True
     except subprocess.CalledProcessError as e:
         print_error(f"Pipeline execution failed (exit code {e.returncode})")
@@ -155,26 +123,25 @@ def run_pipeline():
 # 4️⃣ MAIN EXECUTION
 # ───────────────────────────────────────────────
 def main():
-    print_colored("\n🏭  WM-811K Wafer Defect Classification - One-Click Execution\n", Colors.BOLD + Colors.HEADER)
+    print_colored("\n🏭  WM-811K Wafer Defect Classification - One-Click Execution\n",
+                  Colors.BOLD + Colors.HEADER)
 
     # Step 0: Ensure Python 3.10
     if not check_python310():
-        if not setup_python310():
-            sys.exit(1)
-
-    # Step 1: Check Python version
-    if not check_python_version():
+        print_error("Python 3.10 is required. Please install it manually.")
         sys.exit(1)
 
-    # Step 2: Check dataset
+    if not create_venv():
+        sys.exit(1)
+
+    if not install_requirements():
+        sys.exit(1)
+
+    # Step 1: Check dataset
     if not check_dataset():
         sys.exit(1)
 
-    # Step 3: Check dependencies
-    if not check_dependencies():
-        sys.exit(1)
-
-    # Step 4: Run pipeline
+    # Step 2: Run pipeline
     success = run_pipeline()
 
     print_header("📊 Execution Summary")
@@ -182,7 +149,6 @@ def main():
         print_success("Pipeline completed successfully! 🎉")
     else:
         print_error("Pipeline execution failed.")
-        print_info("Check the error messages above for details.")
         sys.exit(1)
 
 if __name__ == "__main__":
