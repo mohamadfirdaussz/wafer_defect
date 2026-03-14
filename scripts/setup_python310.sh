@@ -53,11 +53,10 @@
 
 
 #!/bin/bash
-# setup_python310.sh
+# scripts/setup_python310.sh
 # ───────────────────────────────────────────────
 # Minimal Python 3.10 setup for WM-811K project
 # ───────────────────────────────────────────────
-
 set -e
 
 echo "📌 Updating system packages..."
